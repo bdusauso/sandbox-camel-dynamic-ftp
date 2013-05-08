@@ -11,7 +11,5 @@ public class SimpleRouteBuilder extends SpringRouteBuilder {
 
     @Override
     public void configure() throws Exception {
-        from("seda:ftpInput")
-                .to("ftp://localhost:2121/");
     }
 }

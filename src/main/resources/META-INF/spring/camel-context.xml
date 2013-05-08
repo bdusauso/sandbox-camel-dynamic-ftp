@@ -11,6 +11,7 @@
 
     <camel:camelContext xmlns="http://camel.apache.org/schema/spring">
         <camel:template id="producerTemplate"/>
+        <camel:consumerTemplate id="consumerTemplate"/>
         <camel:routeBuilder ref="simpleRouteBuilder"/>
     </camel:camelContext>
 

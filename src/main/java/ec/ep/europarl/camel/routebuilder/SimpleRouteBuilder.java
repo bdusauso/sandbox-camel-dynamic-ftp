@@ -1,10 +1,7 @@
 package ec.ep.europarl.camel.routebuilder;
 
-import ec.ep.europarl.camel.component.FtpReceiver;
-import ec.ep.europarl.camel.component.FtpSender;
 import org.apache.camel.LoggingLevel;
 import org.apache.camel.spring.SpringRouteBuilder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -13,12 +10,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class SimpleRouteBuilder extends SpringRouteBuilder {
 
-    @Autowired
-    private FtpSender ftpSender;
-
-    @Autowired
-    private FtpReceiver ftpReceiver;
-
     @Override
     public void configure() throws Exception {
         errorHandler(defaultErrorHandler()
@@ -26,10 +17,15 @@ public class SimpleRouteBuilder extends SpringRouteBuilder {
                 .backOffMultiplier(2)
                 .retryAttemptedLogLevel(LoggingLevel.WARN));
 
-        from("file:src/data")
-                .bean(ftpSender)
-                .delay(10000)
-                .bean(ftpReceiver)
+        from("file:src/data?noop=true")
+                .to("ftp://${hostname}:${properties.port}/${properties.inputDir}?username=${properties.user}&password=${properties.password}&fileName=${header.CamelFileNameOnly}")
+                .to("direct:ftpSender");
+
+/*
+        from("direct:ftpSender")
+                .delayer(10000)
+                .to("ftp://admin@localhost:2121/output?password=admin&fileName=${header.CamelFileNameOnly}")
                 .log("End route");
+*/
     }
 }

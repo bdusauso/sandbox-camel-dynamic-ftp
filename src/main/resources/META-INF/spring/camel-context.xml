@@ -7,14 +7,52 @@
        xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd
        http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
 
-    <context:property-placeholder location="classpath:/application.properties"/>
+    <context:property-placeholder location="classpath:application.properties"
+                                  system-properties-mode="NEVER"
+                                  ignore-unresolvable="false"/>
 
     <context:component-scan base-package="ec.ep.europarl"/>
 
     <camel:camelContext xmlns="http://camel.apache.org/schema/spring">
-        <camel:template id="producerTemplate"/>
-        <camel:consumerTemplate id="consumerTemplate"/>
-        <camel:routeBuilder ref="simpleRouteBuilder"/>
+        <endpoint id="ftpProducer"
+                  uri="ftp://${user}@${hostname}:${port}/${inputDir}?password=${password}&amp;fileName=$simple{header.CamelFileNameOnly}"/>
+
+        <endpoint id="ftpChecker"
+                  uri="ftp://${user}@${hostname}:${port}/${outputDir}?password=${password}&amp;download=false&amp;delete=false"/>
+
+        <endpoint id="ftpConsumer"
+                  uri="ftp://${user}@${hostname}:${port}/${outputDir}?password=${password}&amp;delete=true"/>
+
+        <route>
+            <from uri="file:src/data?noop=true"/>
+            <log message="File ${header.CamelFileNameOnly}"/>
+            <to uri="ref:ftpProducer"/>
+            <to uri="direct:aggregatorStart"/>
+        </route>
+
+        <route>
+            <from uri="ref:ftpChecker"/>
+            <log message="Ftp ${header.CamelFileNameOnly}"/>
+            <to uri="direct:aggregatorStart"/>
+        </route>
+
+        <route>
+            <from uri="direct:aggregatorStart"/>
+            <log message="Sending ${body} with key ${header.CamelFileNameOnly}"/>
+            <aggregate strategyRef="ftpAggregationStrategy" completionSize="2">
+                <correlationExpression>
+                    <header>CamelFileNameOnly</header>
+                </correlationExpression>
+                <to uri="mock:result"/>
+            </aggregate>
+        </route>
+
+        <!--
+                <route>
+                    <from uri="ref:ftpConsumer"/>
+                    <log message="${header.CamelFileName}"/>
+                </route>
+        -->
     </camel:camelContext>
 
 </beans>
